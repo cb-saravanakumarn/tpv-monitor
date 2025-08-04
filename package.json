@@ -1,0 +1,29 @@
+{
+  "name": "tpv-monitor",
+  "version": "1.0.0",
+  "description": "A simple Node.js monitoring application",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "npm run build && node dist/index.js",
+    "dev": "nodemon --exec ts-node src/index.ts",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "node",
+    "monitor",
+    "tpv"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.1.0",
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  }
+}
