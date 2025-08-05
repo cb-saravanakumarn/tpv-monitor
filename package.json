@@ -2,28 +2,29 @@
   "name": "tpv-monitor",
   "version": "1.0.0",
   "description": "A simple Node.js monitoring application",
-  "main": "dist/index.js",
+  "main": "src/server.ts",
   "scripts": {
     "build": "tsc",
-    "start": "npm run build && node dist/index.js",
-    "dev": "nodemon --exec ts-node src/index.ts",
-    "clean": "rm -rf dist"
+    "start": "npm run build && node dist/server.js",
+    "start:prod": "node dist/server.js",
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "dev:ts": "ts-node src/server.ts",
+    "type-check": "tsc --noEmit"
   },
-  "keywords": [
-    "node",
-    "monitor",
-    "tpv"
-  ],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "googleapis": "^126.0.1",
+    "dotenv": "^16.3.1",
+    "cors": "^2.8.5",
+    "@slack/web-api": "^7.0.4"
   },
   "devDependencies": {
-    "@types/express": "^5.0.3",
-    "@types/node": "^24.1.0",
-    "nodemon": "^3.1.10",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.2"
+    "@types/express": "^4.17.17",
+    "@types/node": "^20.5.0",
+    "@types/cors": "^2.8.13",
+    "typescript": "^5.1.6",
+    "ts-node": "^10.9.1",
+    "ts-node-dev": "^2.0.0",
+    "nodemon": "^3.0.1"
   }
 }
