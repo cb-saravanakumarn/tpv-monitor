@@ -16,7 +16,7 @@ export const config = {
   },
   slack: {
     botToken: process.env.SLACK_BOT_TOKEN,
-    channel: process.env.SLACK_CHANNEL || "#general",
+    channel: process.env.SLACK_CHANNEL || "",
     enableNotifications: process.env.SLACK_ENABLE_NOTIFICATIONS === "true",
   },
 };

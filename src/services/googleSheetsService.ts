@@ -1,6 +1,7 @@
 // src/services/googleSheetsService.ts
 import { google, sheets_v4 } from "googleapis";
 import { GoogleAuth } from "google-auth-library";
+import * as fs from "fs";
 import { GoogleServiceAccountCredentials } from "../types";
 import { config } from "../config/environment";
 
@@ -28,32 +29,41 @@ export class GoogleSheetsService {
     try {
       let auth: GoogleAuth;
 
-      // Try to use service account key file if provided
-      if (config.google.serviceAccountKeyFile) {
-        auth = new google.auth.GoogleAuth({
-          keyFile: config.google.serviceAccountKeyFile,
-          scopes: this.SCOPES,
-        });
-      } else {
-        // Use individual environment variables
-        const serviceAccountKey: GoogleServiceAccountCredentials = {
-          type: "service_account",
-          project_id: config.google.projectId!,
-          private_key_id: config.google.privateKeyId!,
-          private_key: config.google.privateKey!,
-          client_email: config.google.clientEmail!,
-          client_id: config.google.clientId!,
-          auth_uri: "https://accounts.google.com/o/oauth2/auth",
-          token_uri: "https://oauth2.googleapis.com/token",
-          auth_provider_x509_cert_url:
-            "https://www.googleapis.com/oauth2/v1/certs",
-          client_x509_cert_url: `https://www.googleapis.com/robot/v1/metadata/x509/${config.google.clientEmail}`,
-        };
+      // Try to use service account key file if provided and it exists
+      if (
+        config.google.serviceAccountKeyFile &&
+        fs.existsSync(config.google.serviceAccountKeyFile)
+      ) {
+        try {
+          // Check if the file has valid JSON content
+          const keyFileContent = fs.readFileSync(
+            config.google.serviceAccountKeyFile,
+            "utf8"
+          );
+          const parsedKey = JSON.parse(keyFileContent);
 
-        auth = new google.auth.GoogleAuth({
-          credentials: serviceAccountKey,
-          scopes: this.SCOPES,
-        });
+          // Only use key file if it has required fields
+          if (
+            parsedKey.type &&
+            parsedKey.private_key &&
+            parsedKey.client_email
+          ) {
+            auth = new google.auth.GoogleAuth({
+              keyFile: config.google.serviceAccountKeyFile,
+              scopes: this.SCOPES,
+            });
+          } else {
+            throw new Error("Invalid key file format");
+          }
+        } catch (error) {
+          console.warn(
+            "Service account key file is invalid, falling back to environment variables"
+          );
+          // Fall through to use environment variables
+          auth = this.createAuthFromEnvVars();
+        }
+      } else {
+        auth = this.createAuthFromEnvVars();
       }
 
       const authClient = await auth.getClient();
@@ -68,6 +78,27 @@ export class GoogleSheetsService {
         `Failed to initialize Google Sheets authentication: ${error}`
       );
     }
+  }
+
+  private createAuthFromEnvVars(): GoogleAuth {
+    // Use individual environment variables
+    const serviceAccountKey: GoogleServiceAccountCredentials = {
+      type: "service_account",
+      project_id: config.google.projectId!,
+      private_key_id: config.google.privateKeyId!,
+      private_key: config.google.privateKey!,
+      client_email: config.google.clientEmail!,
+      client_id: config.google.clientId!,
+      auth_uri: "https://accounts.google.com/o/oauth2/auth",
+      token_uri: "https://oauth2.googleapis.com/token",
+      auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
+      client_x509_cert_url: `https://www.googleapis.com/robot/v1/metadata/x509/${config.google.clientEmail}`,
+    };
+
+    return new google.auth.GoogleAuth({
+      credentials: serviceAccountKey,
+      scopes: this.SCOPES,
+    });
   }
 
   public async getSpreadsheetInfo(spreadsheetId: string): Promise<{
