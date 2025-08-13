@@ -13,6 +13,13 @@ export const config = {
     clientEmail: process.env.GOOGLE_CLIENT_EMAIL,
     clientId: process.env.GOOGLE_CLIENT_ID,
     serviceAccountKeyFile: process.env.GOOGLE_SERVICE_ACCOUNT_KEY_FILE,
+    // OAuth 2.0 Web/Installed App credentials
+    oauthClientId: process.env.GOOGLE_OAUTH_CLIENT_ID,
+    oauthClientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET,
+    oauthRedirectUri: process.env.GOOGLE_OAUTH_REDIRECT_URI,
+    oauthTokenFile:
+      process.env.GOOGLE_OAUTH_TOKEN_FILE ||
+      `${process.cwd()}/google-oauth-tokens.json`,
   },
   slack: {
     botToken: process.env.SLACK_BOT_TOKEN,
@@ -25,13 +32,18 @@ export const config = {
 export const validateEnvironment = (): void => {
   const { google, slack } = config;
 
-  if (
-    !google.serviceAccountKeyFile &&
-    (!google.projectId || !google.privateKey || !google.clientEmail)
-  ) {
+  const hasServiceAccount =
+    !!google.serviceAccountKeyFile ||
+    (!!google.projectId && !!google.privateKey && !!google.clientEmail);
+
+  const hasOAuth =
+    !!google.oauthClientId &&
+    !!google.oauthClientSecret &&
+    !!google.oauthRedirectUri;
+
+  if (!hasServiceAccount && !hasOAuth) {
     throw new Error(
-      "Missing Google credentials. Provide either GOOGLE_SERVICE_ACCOUNT_KEY_FILE or " +
-        "GOOGLE_PROJECT_ID, GOOGLE_PRIVATE_KEY, and GOOGLE_CLIENT_EMAIL"
+      "Missing Google credentials. Provide either service account (GOOGLE_SERVICE_ACCOUNT_KEY_FILE or GOOGLE_PROJECT_ID/GOOGLE_PRIVATE_KEY/GOOGLE_CLIENT_EMAIL) or OAuth (GOOGLE_OAUTH_CLIENT_ID/GOOGLE_OAUTH_CLIENT_SECRET/GOOGLE_OAUTH_REDIRECT_URI)."
     );
   }
 

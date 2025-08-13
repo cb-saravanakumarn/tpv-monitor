@@ -4,6 +4,7 @@ import cors from "cors";
 import { config, validateEnvironment } from "./config/environment";
 import sheetsRoutes from "./routes/sheetsRoutes";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
+import authRoutes from "./routes/authRoutes";
 
 class Server {
   private app: Application;
@@ -24,6 +25,7 @@ class Server {
   }
 
   private initializeRoutes(): void {
+    this.app.use("/", authRoutes);
     this.app.use("/", sheetsRoutes);
   }
 

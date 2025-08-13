@@ -1,6 +1,6 @@
 // src/services/googleSheetsService.ts
 import { google, sheets_v4 } from "googleapis";
-import { GoogleAuth } from "google-auth-library";
+import { GoogleAuth, OAuth2Client } from "google-auth-library";
 import * as fs from "fs";
 import { GoogleServiceAccountCredentials } from "../types";
 import { config } from "../config/environment";
@@ -27,6 +27,20 @@ export class GoogleSheetsService {
     }
 
     try {
+      // Prefer OAuth if configured
+      if (
+        config.google.oauthClientId &&
+        config.google.oauthClientSecret &&
+        config.google.oauthRedirectUri
+      ) {
+        const oauthClient = await this.createOAuthClient();
+        this.sheetsAPI = google.sheets({
+          version: "v4",
+          auth: oauthClient as any,
+        });
+        return this.sheetsAPI;
+      }
+
       let auth: GoogleAuth;
 
       // Try to use service account key file if provided and it exists
@@ -99,6 +113,39 @@ export class GoogleSheetsService {
       credentials: serviceAccountKey,
       scopes: this.SCOPES,
     });
+  }
+
+  private async createOAuthClient(): Promise<OAuth2Client> {
+    const oAuth2Client = new google.auth.OAuth2(
+      config.google.oauthClientId,
+      config.google.oauthClientSecret,
+      config.google.oauthRedirectUri
+    );
+
+    // Load tokens if they exist
+    if (
+      config.google.oauthTokenFile &&
+      fs.existsSync(config.google.oauthTokenFile)
+    ) {
+      try {
+        const tokenContent = fs.readFileSync(
+          config.google.oauthTokenFile,
+          "utf8"
+        );
+        const tokens = JSON.parse(tokenContent);
+        oAuth2Client.setCredentials(tokens);
+      } catch (err) {
+        console.warn(
+          "Failed to load OAuth tokens from file. You may need to authorize."
+        );
+      }
+    } else {
+      throw new Error(
+        "OAuth configured but no tokens found. Visit /auth/google to authorize and then /auth/google/callback with the returned code."
+      );
+    }
+
+    return oAuth2Client;
   }
 
   public async getSpreadsheetInfo(spreadsheetId: string): Promise<{
